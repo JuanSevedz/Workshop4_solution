@@ -1,4 +1,13 @@
-sqlalchemy
+# Requirements file for setting up a FastAPI application with SQLAlchemy integration
+
+# FastAPI framework for building APIs
 fastapi
+
+# ASGI server to run FastAPI application
 uvicorn
+
+# SQLAlchemy ORM for database interaction
+sqlalchemy
+
+# SQLAlchemy ORM extension for session management
 sqlalchemy.orm
