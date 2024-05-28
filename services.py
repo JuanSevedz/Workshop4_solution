@@ -39,9 +39,7 @@ async def root():
 def hello_ud():
     return "Welcome to UD!"
 
-# Ruta para obtener todos los productos
-@app.get("/products")
-# Ruta para obtener todos los productos
+
 # Ruta para obtener todos los productos
 @app.get("/products")
 def get_products():
