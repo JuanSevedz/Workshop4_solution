@@ -83,7 +83,7 @@ def get_products():
         # Convert results to JSON format
         return [{"id": row.id, "name": row.name, "description": row.description} for row in products_list]
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail="Error retrieving products")
+        raise HTTPException(status_code=500, detail="Error retrieving products")from e
 
 # Route to create a new product
 @app.post("/products")
@@ -98,7 +98,7 @@ def create_product(name: str, description: str):
         return {"message": "Product created successfully"}
     except SQLAlchemyError as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail="Error creating product")
+        raise HTTPException(status_code=500, detail="Error creating product") from e
 
 # Run the application using Uvicorn
 if __name__ == "__main__":

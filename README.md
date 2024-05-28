@@ -35,6 +35,10 @@ This application provides endpoints to manage products stored in a PostgreSQL da
     ```bash
     uvicorn main:app --reload
     ```
+    or:
+    ```bash
+    python services.py
+    ```
 
 2. Access the API documentation in your browser:
 
@@ -53,3 +57,5 @@ Make sure to configure your database connection in the `main.py` file:
 
 ```python
 engine = create_engine('postgresql://username:password@host:port/database_name')
+```
+On this route, verify the owner of the DB, in this case is 'postgres' and the 'databasa_name' shold be replaced by the name of your database, Ex('postgres').
