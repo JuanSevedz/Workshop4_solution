@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # Crear la conexión a la base de datos
 engine = create_engine('postgresql://postgres:Sarita2023@localhost:5432/postgres')
@@ -22,12 +24,23 @@ products = Table('products', metadata,
 # Inicializar la aplicación FastAPI
 app = FastAPI()
 
-
-
 # Definir ruta para el favicon
 @app.get("/favicon.ico")
 async def get_favicon():
     return Response(content=b"", media_type="image/x-icon")
+
+
+# Configurar el middleware CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Esto permite solicitudes desde cualquier origen
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
+
+
+
 
 # Ruta principal
 @app.get("/")
