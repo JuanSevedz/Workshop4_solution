@@ -12,12 +12,26 @@
     <h1>Workshop 4 - AP</h1>
     <h2>Full-Stack Test</h2>
     <p>Click on the buttons to explore services</p>
-    <!-- Buttons to call functions -->
-    <div>
-        <button onclick="callMessage()">Get Message</button>
-        <button onclick="callWebService()">Get Table</button>
-    </div>
-    <!-- Container to display results -->
-    <div id="result"></div>
+        <button id="getMessageBtn">Get Message</button>
+        <button id="getTableBtn">Get Table</button>
+        <button id="createProductBtn">Create Product</button>
+        
+        <form id="productForm" style="display: none;">
+            <label for="name">Nombre:</label>
+            <input type="text" id="name" name="name" required>
+            <br>
+            <label for="description">Descripción:</label>
+            <input type="text" id="description" name="description" required>
+            <br>
+            <button type="submit">Crear Producto</button>
+        </form>
+        
+        <!-- Área para mostrar la respuesta -->
+        <div id="response"></div>
+        
+        <!-- Áreas para mostrar el mensaje y la tabla -->
+        <div id="messageResponse"></div>
+        <div id="tableResponse"></div>
+    </body>
 </body>
 </html>

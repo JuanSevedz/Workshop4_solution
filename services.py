@@ -13,29 +13,86 @@ Imports:
 - SQLAlchemyError: Base class for exceptions raised by SQLAlchemy.
 - sessionmaker: Function to create a new session class with a given sessionmaker configuration.
 """
+import os
 import uvicorn
-from fastapi import FastAPI, HTTPException, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine
+from fastapi import FastAPI, HTTPException, Depends, Response
+from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session, declarative_base,Query
+from dotenv import load_dotenv
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
-# Create the connection to the database
-engine = create_engine('postgresql://postgres:Sarita2023@localhost:5432/postgres')
+# Cargar variables de entorno
+load_dotenv()
 
-# Create the SQLAlchemy session
-Session = sessionmaker(bind=engine)
-session = Session()
-
-# Define the metadata and the table
-metadata = MetaData()
-products = Table('products', metadata,
-                 Column('id', Integer, primary_key=True),
-                 Column('name', String),
-                 Column('description', String))
-
-# Initialize the FastAPI application
+# Inicializar la aplicación FastAPI
 app = FastAPI()
+
+# Crear la conexión a la base de datos
+DATABASE_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_URL')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+engine = create_engine(DATABASE_URL)
+
+# Crear la sesión de SQLAlchemy
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Declarar la base de datos y la tabla
+Base = declarative_base()
+
+class Product(Base):
+    __tablename__ = "products"
+    id = Column(Integer,primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String)
+
+Base.metadata.create_all(bind=engine)
+
+# Modelos Pydantic para validar los datos de entrada y respuesta
+class ProductCreate(BaseModel):
+    name: str
+    description: str
+
+class ProductResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+
+class Config:
+    from_attributes = True  # Cambia 'orm_mode' a 'from_attributes'
+
+
+# Configurar middleware de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permitir solicitudes de cualquier origen
+    allow_credentials=True,
+    allow_methods=["*"],  # Permitir todos los métodos HTTP
+    allow_headers=["*"],  # Permitir todos los encabezados HTTP
+)
+
+# Dependencia para obtener la sesión de la base de datos
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Ruta para crear un nuevo producto
+@app.post("/products/add", response_model=ProductResponse)
+def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+    """
+    Creates a new product.
+    """
+    try:
+        db_product = Product(name=product.name, description=product.description)
+        db.add(db_product)
+        db.commit()
+        db.refresh(db_product)
+        return db_product
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error creating product") from e
 
 # Define route for the favicon
 @app.get("/favicon.ico")
@@ -44,16 +101,6 @@ async def get_favicon():
     Returns the favicon.
     """
     return Response(content=b"", media_type="image/x-icon")
-
-# Configure CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # This allows requests from any origin
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
-)
-
 # Main route, only to verify the program working.
 @app.get("/")
 async def root():
@@ -62,45 +109,25 @@ async def root():
     """
     return {"message": "Welcome to my FastAPI application!"}
 
-# Hello route
+
+# Ruta para obtener un mensaje de bienvenida
 @app.get("/hello_ud")
 def hello_ud():
     """
     Returns a welcome message specific to UD.
     """
     return "Welcome to UD!"
-
-# Route to get all products
-@app.get("/products")
-def get_products():
+# Ruta para obtener todos los productos
+@app.get("/products", response_model=list[ProductResponse]) 
+def get_products(db: Session = Depends(get_db)):
     """
     Returns all products.
     """
-    try:
-        query = products.select()
-        result = session.execute(query)
-        products_list = result.fetchall()
-        # Convert results to JSON format
-        return [{"id": row.id, "name": row.name, "description": row.description} for row in products_list]
-    except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail="Error retrieving products")from e
+    products_query = db.query(Product).order_by(Product.id)  # Ordenar por ID
+    products = products_query.all()
+    return products
 
-# Route to create a new product
-@app.post("/products")
-def create_product(name: str, description: str):
-    """
-    Creates a new product.
-    """
-    try:
-        query = products.insert().values(name=name, description=description)
-        session.execute(query)
-        session.commit()
-        return {"message": "Product created successfully"}
-    except SQLAlchemyError as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Error creating product") from e
-
-# Run the application using Uvicorn
+# Ejecutar la aplicación usando Uvicorn
 if __name__ == "__main__":
     print("Starting Uvicorn server...")
     uvicorn.run(app, host="0.0.0.0", port=8000)
